@@ -11,6 +11,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() =>
+        Provider.of<ProductProvider>(context, listen: false).loadProducts());
+  }
+
   void _addProduct() {
     showDialog(
       context: context,
@@ -18,8 +25,8 @@ class _HomePageState extends State<HomePage> {
         title: Text('Add Product'),
         content: SingleChildScrollView(
           child: _AddProductForm(
-            onSubmit: (product) {
-              Provider.of<ProductProvider>(context, listen: false)
+            onSubmit: (product) async {
+              await Provider.of<ProductProvider>(context, listen: false)
                   .addProduct(product);
               Navigator.pop(context);
             },
@@ -86,23 +93,40 @@ class _AddProductFormState extends State<_AddProductForm> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _gstController = TextEditingController();
+  final _nameFocusNode = FocusNode();
+  final _priceFocusNode = FocusNode();
+  final _gstFocusNode = FocusNode();
 
   @override
   void dispose() {
     _nameController.dispose();
     _priceController.dispose();
     _gstController.dispose();
+    _nameFocusNode.dispose();
+    _priceFocusNode.dispose();
+    _gstFocusNode.dispose();
     super.dispose();
   }
 
   void _submitForm() {
+    // Unfocus all fields before submitting
+    _nameFocusNode.unfocus();
+    _priceFocusNode.unfocus();
+    _gstFocusNode.unfocus();
+
     if (_formKey.currentState!.validate()) {
-      final product = Product(
-        name: _nameController.text,
-        price: double.parse(_priceController.text),
-        gstRate: double.parse(_gstController.text),
-      );
-      widget.onSubmit(product);
+      try {
+        final product = Product(
+          name: _nameController.text.trim(),
+          price: double.parse(_priceController.text),
+          gstRate: double.parse(_gstController.text),
+        );
+        widget.onSubmit(product);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding product: $e')),
+        );
+      }
     }
   }
 
@@ -115,20 +139,34 @@ class _AddProductFormState extends State<_AddProductForm> {
         children: [
           TextFormField(
             controller: _nameController,
-            decoration: InputDecoration(labelText: 'Product Name'),
+            focusNode: _nameFocusNode,
+            decoration: InputDecoration(
+              labelText: 'Product Name',
+              border: OutlineInputBorder(),
+            ),
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => _priceFocusNode.requestFocus(),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter product name';
               }
               return null;
             },
           ),
+          SizedBox(height: 16),
           TextFormField(
             controller: _priceController,
-            decoration: InputDecoration(labelText: 'Price'),
-            keyboardType: TextInputType.number,
+            focusNode: _priceFocusNode,
+            decoration: InputDecoration(
+              labelText: 'Price',
+              border: OutlineInputBorder(),
+              prefixText: '₹',
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => _gstFocusNode.requestFocus(),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter price';
               }
               if (double.tryParse(value) == null) {
@@ -137,12 +175,20 @@ class _AddProductFormState extends State<_AddProductForm> {
               return null;
             },
           ),
+          SizedBox(height: 16),
           TextFormField(
             controller: _gstController,
-            decoration: InputDecoration(labelText: 'GST Rate (%)'),
-            keyboardType: TextInputType.number,
+            focusNode: _gstFocusNode,
+            decoration: InputDecoration(
+              labelText: 'GST Rate (%)',
+              border: OutlineInputBorder(),
+              suffixText: '%',
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submitForm(),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return 'Please enter GST rate';
               }
               if (double.tryParse(value) == null) {
@@ -151,9 +197,12 @@ class _AddProductFormState extends State<_AddProductForm> {
               return null;
             },
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 24),
           ElevatedButton(
             onPressed: _submitForm,
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(double.infinity, 48),
+            ),
             child: Text('Add Product'),
           ),
         ],

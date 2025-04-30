@@ -1,21 +1,24 @@
 import 'package:flutter/foundation.dart';
 import '../models/product.dart';
+import '../services/product_service.dart';
 
-class ProductProvider extends ChangeNotifier {
-  final List<Product> _products = [];
+class ProductProvider with ChangeNotifier {
+  final ProductService _productService = ProductService();
+  List<Product> _products = [];
 
   List<Product> get products => _products;
 
-  void addProduct(Product product) {
-    _products.add(product);
+  Future<void> loadProducts() async {
+    _products = await _productService.getProducts();
     notifyListeners();
   }
 
+  Future<void> addProduct(Product product) async {
+    await _productService.addProduct(product);
+    await loadProducts();
+  }
+
   List<Product> searchProducts(String query) {
-    if (query.isEmpty) return [];
-    return _products
-        .where((product) =>
-            product.name.toLowerCase().contains(query.toLowerCase()))
-        .toList();
+    return _products.where((product) => product.name.contains(query)).toList();
   }
 }
