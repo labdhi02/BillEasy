@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "625100618616",
+    "project_id": "extrnalexam",
+    "storage_bucket": "extrnalexam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:625100618616:android:76b5f852af43119e1da68d",
+        "android_client_info": {
+          "package_name": "com.example.extrnalexam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfKRFG3-h7TXgXUyZrBfP5c7tOMxMd8y0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
